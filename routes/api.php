@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,3 +23,8 @@ Route::prefix('forgot-password')->group(function(){
 });
 
 Route::post('/login', [AuthenticationController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function(){
+    Route::get('profile', [ProfileController::class, 'getProfile']);
+    Route::patch('profile', [ProfileController::class, 'updateProfile']);
+});
