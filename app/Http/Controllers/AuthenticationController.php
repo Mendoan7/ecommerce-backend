@@ -162,4 +162,57 @@ class AuthenticationController extends Controller
             'Password salah'            
         ]);
     }
+
+    public function authGoogle()
+    {
+        $validator = Validator::make(request()->all(), [
+            'token' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseFormatter::error(400, $validator->errors());
+        }
+
+        $client = new Google_Client(['client_id' => config('services.google.client_id')]);  // Specify the WEB_CLIENT_ID of the app that accesses the backend
+        $payload = $client->verifyIdToken(request()->token);
+        if ($payload) {
+            $userId = $payload['sub'];
+            $name = $payload['name'];
+            $email = $payload['email'];
+
+            $user = User::where('social_media_provider', 'google')->where('social_media_provider', $userId)->first();
+            if (!is_null($user)) {
+                $token = $user->createToken(config('app.name'))->plainTextToken;
+
+                return ResponseFormatter::success([
+                    'token' => $token
+                ]);
+            }
+
+            $user = User::where('email', $email)->first();
+            if (!is_null($user)) {
+                $user->update([
+                    'social_media_provider' => 'google',
+                    'social_media_id' => $userId
+                ]);
+            } else {
+                $user = User::create([
+                    'name' => $name,
+                    'email' => $email,
+                    'social_media_provider' => 'google',
+                    'social_media_id' => $userId,
+                ]);
+            }
+            $token = $user->createToken(config('app.name'))->plainTextToken;
+                return ResponseFormatter::success([
+                    'token' => $token
+                ]);
+
+        } else {
+            return ResponseFormatter::error(400, null, [
+                'Invalid token!'
+            ]);
+        }
+    }
+
 }

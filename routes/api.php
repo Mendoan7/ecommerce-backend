@@ -12,11 +12,15 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // })->middleware('auth:sanctum');
 
+// Register
+
 Route::post('/register', [AuthenticationController::class, 'register']);
 Route::post('/resend-otp', [AuthenticationController::class, 'resendOtp']);
 Route::post('/check-otp', [AuthenticationController::class, 'verifyOtp']);
 Route::post('/verify-register', [AuthenticationController::class, 'verifyRegister']);
+Route::post('/google-auth', [AuthenticationController::class, 'authGoogle']);
 
+// Forgot Password
 Route::prefix('forgot-password')->group(function(){
     Route::post('/request', [ForgotPasswordController::class, 'request']);
     Route::post('/resend-otp', [ForgotPasswordController::class, 'resendOtp']);
@@ -24,17 +28,20 @@ Route::prefix('forgot-password')->group(function(){
     Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
 });
 
+// Home
 Route::post('/login', [AuthenticationController::class, 'login']);
 Route::get('/slider', [HomeController::class, 'getSlider']);
 Route::get('/category', [HomeController::class, 'getCategory']);
 
+// Login first
 Route::middleware('auth:sanctum')->group(function(){
+    // Profile
     Route::get('profile', [ProfileController::class, 'getProfile']);
     Route::patch('profile', [ProfileController::class, 'updateProfile']);
-
+    
+    // Address
     Route::apiResource('address', AddressController::class);
     Route::post('address/{uuid}/set-default', [AddressController::class, 'setDefault']);
-
     Route::get('province', [AddressController::class, 'getProvince']);
     Route::get('city', [AddressController::class, 'getCity']);
 });

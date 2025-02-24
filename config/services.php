@@ -24,6 +24,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT')
+    ],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
