@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Models\Address\Address;
+use App\Models\Product\Product;
 use App\Models\Product\Review;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -76,16 +77,16 @@ class User extends Authenticatable
     
     public function getApiResponseAsSellerAttribute()
     {
-        $productId = $this->product()->pluck('id');
+        $productId = $this->products()->pluck('id');
 
         return [
             'username' => $this->username,
             'store_name' => $this->store_name,
             'photo_url' => $this->photo_url,
-            'product_count' => $this->product()->count(),
+            'product_count' => $this->products()->count(),
             'rating_count' => Review::whereIn('product_id', $productId)->count(),
             'join_date' => $this->created_at->diffForHumans(),
-            'send_from' => optional($this->address()->where('is_default', true)->first())->getApiResponseAttribute()
+            'send_from' => optional($this->addresses()->where('is_default', true)->first())->getApiResponseAttribute()
         ];
     }
 
@@ -102,5 +103,10 @@ class User extends Authenticatable
     public function addresses()
     {
         return $this->hasMany(Address::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'seller_id');
     }
 }

@@ -105,6 +105,7 @@ class Product extends Model
             'slug' => $this->slug,
             'price' => $this->price,
             'price_sale' => $this->price_sale ?: null,
+            'price_discount_percentage' => $this->price_discount_percentage,
             'sale_count' => $this->getSaleCountAttribute(),
             'image_url' => $this->images->first()->image_url,
             'stock' => $this->stock,
@@ -139,13 +140,13 @@ class Product extends Model
                 return  $variation->getApiResponseAttribute();
             }),
             'review_summary' => [
-                '5' => $this->review()->where('star_seller', 5)->count(),
-                '4' => $this->review()->where('star_seller', 4)->count(),
-                '3' => $this->review()->where('star_seller', 3)->count(),
-                '2' => $this->review()->where('star_seller', 2)->count(),
-                '1' => $this->review()->where('star_seller', 1)->count(),
-                'with_attachment' => $this->reviews()->whereNotNull('attacments')->count(),
-                'with_description' => $this->reviews()->whereNotNull('descriptions')->count(),
+                '5' => $this->reviews()->where('star_seller', 5)->count(),
+                '4' => $this->reviews()->where('star_seller', 4)->count(),
+                '3' => $this->reviews()->where('star_seller', 3)->count(),
+                '2' => $this->reviews()->where('star_seller', 2)->count(),
+                '1' => $this->reviews()->where('star_seller', 1)->count(),
+                'with_attachment' => $this->reviews()->whereNotNull('attachments')->count(),
+                'with_description' => $this->reviews()->whereNotNull('description')->count(),
             ],
             'other_product' => $this->seller->products->where('id', '!=', $this->id)->random(6)->map(function ($product){
                 return $product->getApiResponseExcerptAttribute();

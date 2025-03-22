@@ -44,7 +44,7 @@ class Category extends Model
         ];
     }
 
-    public function getApiResponseParentAttribute()
+    public function getApiResponseWithParentAttribute()
     {
         return [
             'slug' => $this->slug,

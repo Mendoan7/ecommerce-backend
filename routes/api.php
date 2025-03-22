@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AuthenticationController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
@@ -33,6 +34,11 @@ Route::post('/login', [AuthenticationController::class, 'login']);
 Route::get('/slider', [HomeController::class, 'getSlider']);
 Route::get('/category', [HomeController::class, 'getCategory']);
 
+Route::get('product', [HomeController::class, 'getProduct']);
+Route::get('product/{slug}', [HomeController::class, 'getProductDetail']);
+Route::get('product/{slug}/review', [HomeController::class, 'getProductReview']);
+Route::get('seller/{username}', [HomeController::class, 'getSellerDetail']);
+
 // Login first
 Route::middleware('auth:sanctum')->group(function(){
     // Profile
@@ -44,4 +50,11 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('address/{uuid}/set-default', [AddressController::class, 'setDefault']);
     Route::get('province', [AddressController::class, 'getProvince']);
     Route::get('city', [AddressController::class, 'getCity']);
+
+    Route::prefix('cart')->group(function(){
+        Route::get('/', [CartController::class, 'getCart']);
+        Route::post('/', [CartController::class, 'addToCart']);
+        Route::delete('/{uuid}', [CartController::class, 'removeItemFromCart']);
+        Route::patch('/{uuid}', [CartController::class, 'updateItemFromCart']);
+    });
 });
