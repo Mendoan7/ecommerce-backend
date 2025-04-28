@@ -4,6 +4,7 @@ namespace App\Models\Cart;
 
 use App\Models\Address\Address;
 use App\Models\User;
+use App\Models\Voucher;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -52,6 +53,11 @@ class Cart extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function voucher()
+    {
+        return $this->hasOne(Voucher::class, 'id', 'voucher_id');
+    }
+
     public function getApiResponseAttribute()
     {
         $subTotal = $this->items->sum('total');
@@ -63,7 +69,7 @@ class Cart extends Model
             'courier_type' => $this->courier_type,
             'courier_estimation' => $this->courier_estimation,
             'courier_price' => $this->courier_price,
-            'voucher' => null,
+            'voucher' => optional($this->voucher)->api_response,
             'subtotal' => $subTotal,
             'voucher_value' => $this->voucher_value,
             'voucher_cashback' => $this->voucher_cashback,
