@@ -54,7 +54,7 @@ class AddressController extends Controller
     public function update(Request $request, string $uuid)
     {
         $validator = Validator::make(request()->all(), $this->getValidation());
-
+        
         if ($validator->fails()) {
             return ResponseFormatter::error(400, $validator->errors());
         }

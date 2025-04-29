@@ -28,6 +28,11 @@ return [
         'client_id' => env('GOOGLE_CLIENT')
     ],
 
+    'rajaongkir' => [
+        'base_url' => 'https://api.rajaongkir.com/starter',
+        'key' => env('RAJAONGKIR_KEY')
+    ],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
