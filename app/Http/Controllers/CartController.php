@@ -210,7 +210,8 @@ class CartController extends Controller
         return $this->getCart();
     }
 
-    public function updateAddress(){
+    public function updateAddress()
+    {
         $validator = Validator::make(request()->all(), [
             'uuid' => 'required|exists:addresses,uuid',
         ]);
@@ -226,7 +227,8 @@ class CartController extends Controller
         return $this->getCart();
     }
 
-    public function getShipping(){
+    public function getShipping()
+    {
 
         $cart = $this->getOrCreateCart();
 
@@ -445,6 +447,23 @@ class CartController extends Controller
         });
 
         return ResponseFormatter::success($order->api_response_detail);
+    }
+
+    public function toggleCoin()
+    {
+        $cart = $this->getOrCreateCart();
+
+        $coin = 0;
+        if (request()->use == 1){
+            $balance = auth()->user()->balance;
+            $maxCoin = $cart->items->sum('total') * 0.1;
+            $coin = $balance > $maxCoin ? $maxCoin : $balance;
+        }
+
+        $cart->pay_with_coin = $coin;
+        $cart->save();
+
+        return $this->getCart();
     }
 
 }

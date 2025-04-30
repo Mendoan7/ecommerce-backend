@@ -57,14 +57,18 @@ Route::middleware('auth:sanctum')->group(function(){
         Route::delete('/{uuid}', [CartController::class, 'removeItemFromCart']);
         Route::patch('/{uuid}', [CartController::class, 'updateItemFromCart']);
 
+        // Voucher
         Route::get('/get-voucher', [CartController::class, 'getVoucher']);
         Route::post('/apply-voucher', [CartController::class, 'applyVoucher']);
         Route::post('/remove-voucher', [CartController::class, 'removeVoucher']);
         
+        // Address & Shipping
         Route::post('/update-address', [CartController::class, 'updateAddress']);
         Route::get('/shipping', [CartController::class, 'getShipping']);
         Route::post('/shipping-fee', [CartController::class, 'updateShippingFee']);
 
+        // Checkout
+        Route::post('/toggle-coin', [CartController::class, 'toggleCoin']);
         Route::post('/checkout', [CartController::class, 'checkout']);
         
     });

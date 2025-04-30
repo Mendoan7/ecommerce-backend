@@ -179,7 +179,7 @@ class Order extends Model
         $params = [
             'transaction_details' => [
                 'order_id' => $this->uuid,
-                'gross_amount' => $this->total_payment,
+                'gross_amount' => round($this->total_payment),
             ],
             'customer_details' => [
                 'first_name' => $this->user->name,
