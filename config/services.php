@@ -33,6 +33,10 @@ return [
         'key' => env('RAJAONGKIR_KEY')
     ],
 
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_KEY')
+    ],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],
