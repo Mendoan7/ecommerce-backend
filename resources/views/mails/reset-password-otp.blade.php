@@ -1,5 +1,9 @@
-Halo {{ $user->name }}, <br>
+@extends('mails.layout')
 
-Kamu akan melakukan reset password, masukan kode OTP berikut : {{ $otp }}, <br>
+@section('content')
+    Halo {{ $user->name }}, <br>
 
-Abaikan pesan ini, jika kamu tidak melakukan reset password.
+    Kamu akan melakukan reset password, masukan kode OTP berikut : {{ $otp }}, <br>
+
+    Abaikan pesan ini, jika kamu tidak melakukan reset password.
+@endsection

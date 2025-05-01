@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NewOrderToSeller;
 use App\Models\Order\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class MidtransController extends Controller
         $order = Order::where('uuid', $orderId)->firstOrFail();
 
         if ($transaction == 'capture' || $transaction == 'settlement') {
+            DB::transaction(function() use($order) {
                 $order->status()->create([
                     'status' => 'paid',
                     'description' => 'Pembayaran berhasil, menunggu proses pengiriman'
@@ -34,6 +36,9 @@ class MidtransController extends Controller
                 foreach ($order->items as $item) {
                     $item->product->decrement('stock', $item->qty);
                 }
+
+                \Mail::to($order->seller->email)->send(new NewOrderToSeller($order));
+            });
 
         } elseif ($transaction == 'cancel' || $transaction == 'deny') {
             $order->status()->create([
