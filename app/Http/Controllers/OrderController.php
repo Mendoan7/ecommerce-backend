@@ -17,12 +17,14 @@ class OrderController extends Controller
             'lastStatus'
         ]);
 
+        // List order
         if (request()->last_status){
             $query->whereHas('lastStatus', function($subQuery){
                 $subQuery->where('status', request()->last_status);
             });
         }
 
+        // Feature Search
         if (request()->search){
             $query->whereHas('seller', function($subQuery){
                 $subQuery->where('store_name', 'LIKE', '%' . request()->search . '%');
@@ -39,5 +41,17 @@ class OrderController extends Controller
         return ResponseFormatter::success($orders->through(function($order){
             return $order->api_response;
         }));
+    }
+
+    public function show(string $uuid)
+    {
+        $order = auth()->user()->order()->with([
+            'seller',
+            'address',
+            'items',
+            'lastStatus'
+        ])->where('uuid', $uuid)->firstOrFail();
+
+        return ResponseFormatter::success($order->api_response_detail);
     }
 }
