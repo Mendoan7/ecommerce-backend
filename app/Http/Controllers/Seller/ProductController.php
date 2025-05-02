@@ -15,6 +15,16 @@ class ProductController extends Controller
     {
         $query = auth()->user()->products()->with(['category', 'images', 'variations']);
 
+        if (request()->search) {
+            $query->where('name', 'LIKE', '%' . request()->search . '%');
+        }
+
+        if (request()->category) {
+            $query->whereHas('category', function($subQuery) {
+                $subQuery->where('name', 'LIKE', '%' . request()->category . '%');
+            });
+        }
+
         $products = $query->paginate(request()->per_page ?? 10);
 
         return ResponseFormatter::success($products->through(function($product){

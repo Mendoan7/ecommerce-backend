@@ -3,6 +3,7 @@
 namespace App\Models\Product;
 
 use App\Models\Category;
+use App\Models\Order\OrderItem;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -93,7 +94,7 @@ class Product extends Model
 
     public function getSaleCountAttribute()
     {
-        return 0;
+        return OrderItem::where('product_id', $this->id)->count();
     }
 
     // Respon pendek
@@ -170,6 +171,7 @@ class Product extends Model
             'width' => $this->width,
             'height' => $this->height,
             'video_url' => $this->video_url,
+            'sale_count' => $this->getSaleCountAttribute(),
             'images' => $this->images->map(function ($image) {
                 return  $image->image_url;
             }),
