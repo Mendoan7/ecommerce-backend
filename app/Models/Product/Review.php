@@ -52,6 +52,7 @@ class Review extends Model
     {
         return [
             'star_seller' => $this->star_seller,
+            'star_courier' => $this->star_courier,
             'variations' => $this->variations,
             'description' => $this->description,
             'attachments' => $this->attachments,

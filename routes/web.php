@@ -9,10 +9,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/testing', function () {
-    $order = Order::orderBy('id', 'desc')->first();
-
-    return new NewOrderToSeller($order);
-});
-
 Route::post('/midtrans/callback', [MidtransController::class, 'callback']);

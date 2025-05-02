@@ -7,6 +7,7 @@ use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Seller\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -80,4 +81,10 @@ Route::middleware('auth:sanctum')->group(function(){
         Route::post('/review/add', [OrderController::class, 'addReview']);
         Route::post('/{uuid}/mark-done', [OrderController::class, 'markAsDone']);
     });
+
+    Route::prefix('seller-dashboard')->group(function(){
+        Route::apiResource('product', ProductController::class);
+
+    });
+
 });
