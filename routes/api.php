@@ -9,6 +9,8 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Seller\ProductController;
 use App\Http\Controllers\Seller\VoucherController;
+use App\Http\Controllers\Seller\OrderSellerController;
+use App\Http\Controllers\Seller\WalletController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -86,7 +88,13 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::prefix('seller-dashboard')->group(function(){
         Route::apiResource('product', ProductController::class);
         Route::apiResource('voucher', VoucherController::class);
-
+        Route::apiResource('order', OrderSellerController::class)->only([
+            'index', 'show'
+        ]);
+        Route::post('order/{uuid}/status', [OrderSellerController::class, 'addStatus']);
+        Route::get('wallet-transaction', [WalletController::class, 'index']);
+        Route::get('list-bank', [WalletController::class, 'getListBank']);
+        Route::post('withdraw', [WalletController::class, 'createWithdraw']);
     });
 
 });
