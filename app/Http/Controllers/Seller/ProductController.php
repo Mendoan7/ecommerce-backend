@@ -8,6 +8,7 @@ use App\ResponseFormatter;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
@@ -80,17 +81,64 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $uuid)
     {
-        //
+        $rules = $this->getValidation();
+        $rules['old_images'] = 'array';
+        $rules['old_images.*'] = 'url';
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return ResponseFormatter::error(400, $validator->errors());
+        }
+
+        $payload = $this->prepareData($validator->validated());
+        $product = DB::transaction(function() use($payload, $uuid) {
+            $product = auth()->user()->products()->where('uuid', $uuid)->firstOrFail();
+            $product->update($payload);
+
+            $product->variations()->delete();
+            foreach ($payload['variations'] as $variation) {
+                $product->variations()->create($variation);
+            }
+
+            foreach ($product->images as $image) {
+                if (!in_array($image->image, $payload['old_images'])) {
+                    Storage::disk('public')->delete($image->image);
+                    $image->delete();
+                }
+            }
+
+            foreach ($payload['images'] as $image) {
+                $product->images()->create($image);
+            }
+
+            return $product;
+        });
+
+        $product->refresh();
+
+        return ResponseFormatter::success($product->api_response_seller);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $uuid)
     {
-        //
+        $product = auth()->user()->products()->where('uuid', $uuid)->firstOrFail();
+        
+        foreach ($product->images as $image) {
+            if ($image->image) {
+                Storage::disk('public')->delete($image->image);
+            }
+        }
+        
+        $product->delete();
+
+        return ResponseFormatter::success([
+            'is_deleted' => true
+        ]);
     }
 
     private function getValidation()
