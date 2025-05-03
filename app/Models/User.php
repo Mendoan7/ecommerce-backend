@@ -119,4 +119,10 @@ class User extends Authenticatable implements Wallet
     {
         return $this->hasMany(Order::class, 'user_id');
     }
+
+    public function vouchers()
+    {
+        return $this->hasMany(Voucher::class, 'seller_id');
+    }
+
 }
