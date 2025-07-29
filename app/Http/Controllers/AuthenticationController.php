@@ -166,7 +166,7 @@ class AuthenticationController extends Controller
     public function authGoogle()
     {
         $validator = Validator::make(request()->all(), [
-            'token' => 'required'
+            'token' => ['required', 'string'],
         ]);
 
         if ($validator->fails()) {
@@ -180,7 +180,7 @@ class AuthenticationController extends Controller
             $name = $payload['name'];
             $email = $payload['email'];
 
-            $user = User::where('social_media_provider', 'google')->where('social_media_provider', $userId)->first();
+            $user = User::where('social_media_provider', 'google')->where('social_media_id', $userId)->first();
             if (!is_null($user)) {
                 $token = $user->createToken(config('app.name'))->plainTextToken;
 
