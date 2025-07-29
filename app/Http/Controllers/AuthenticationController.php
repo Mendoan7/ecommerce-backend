@@ -9,6 +9,7 @@ use App\Mail\SendRegisterOTP;
 use App\ResponseFormatter;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Google_Client;
 
 class AuthenticationController extends Controller
 {
