@@ -149,7 +149,7 @@ class Product extends Model
                 'with_attachment' => $this->reviews()->whereNotNull('attachments')->count(),
                 'with_description' => $this->reviews()->whereNotNull('description')->count(),
             ],
-            'other_product' => $this->seller->products->where('id', '!=', $this->id)->random(6)->map(function ($product){
+            'other_product' => $this->seller->products()->where('id', '!=', $this->id)->limit(6)->map(function ($product){
                 return $product->getApiResponseExcerptAttribute();
             }),
         ];
