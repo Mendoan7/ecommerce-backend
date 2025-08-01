@@ -61,6 +61,7 @@ class AddressController extends Controller
 
         $address = auth()->user()->addresses()->where('uuid', $uuid)->firstOrFail();
         $address->update($this->prepareData());
+        $address->refresh();
 
         return $this->show($address->uuid);
     }
@@ -134,7 +135,9 @@ class AddressController extends Controller
 
     public function getProvince()
     {
-        $provinces = Province::get(['uuid', 'name']);
+        $provinces = cache()->remember('provinces', 3600, function(){
+            return Province::get(['uuid', 'name']);
+        });
 
         return ResponseFormatter::success($provinces);
     }
@@ -152,7 +155,9 @@ class AddressController extends Controller
             $query = $query->where('name', 'LIKE', '%' . request()->search . '%');
         }
 
-        $cities = $query->get();
+        $cities = cache()->remember('cities_' . request()->province_uuid . '_' . request()->search, 3600, function() use($query) {
+            return $query->get();
+        });
 
         return ResponseFormatter::success($cities->pluck('api_response'));
     }
