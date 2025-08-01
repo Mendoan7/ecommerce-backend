@@ -40,7 +40,7 @@ class ForgotPasswordController extends Controller
             'token' => $otp
         ]);
 
-        $user = User::whereMail(request()->email)->firstOrFail();
+        $user = User::where('email', request()->email)->firstOrFail();
         Mail::to($user->email)->send(new SendForgotPasswordOTP($user, $otp));
 
         return ResponseFormatter::success([
