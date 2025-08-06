@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Route;
 // })->middleware('auth:sanctum');
 
 // Register
-
 Route::post('/register', [AuthenticationController::class, 'register']);
 Route::post('/resend-otp', [AuthenticationController::class, 'resendOtp']);
 Route::post('/check-otp', [AuthenticationController::class, 'verifyOtp']);

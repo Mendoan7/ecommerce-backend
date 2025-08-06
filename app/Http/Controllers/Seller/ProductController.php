@@ -25,14 +25,14 @@ class ProductController extends Controller
         }
 
         if (request()->category) {
-            $query->whereHas('category', function($subQuery) {
+            $query->whereHas('category', function ($subQuery) {
                 $subQuery->where('name', 'LIKE', '%' . request()->category . '%');
             });
         }
 
         $products = $query->paginate(request()->per_page ?? 10);
 
-        return ResponseFormatter::success($products->through(function($product){
+        return ResponseFormatter::success($products->through(function ($product) {
             return $product->api_response_seller;
         }));
     }
@@ -50,7 +50,7 @@ class ProductController extends Controller
 
         $payload = $this->prepareData($validator->validated());
 
-        $product = DB::transaction(function() use($payload) {
+        $product = DB::transaction(function () use ($payload) {
             $product = auth()->user()->products()->create($payload);
 
             foreach ($payload['variations'] as $variation) {
@@ -67,7 +67,6 @@ class ProductController extends Controller
         $product->refresh();
 
         return ResponseFormatter::success($product->api_response_seller);
-
     }
 
     /**
@@ -93,7 +92,7 @@ class ProductController extends Controller
         }
 
         $payload = $this->prepareData($validator->validated());
-        $product = DB::transaction(function() use($payload, $uuid) {
+        $product = DB::transaction(function () use ($payload, $uuid) {
             $product = auth()->user()->products()->where('uuid', $uuid)->firstOrFail();
             $product->update($payload);
 
@@ -127,13 +126,13 @@ class ProductController extends Controller
     public function destroy(string $uuid)
     {
         $product = auth()->user()->products()->where('uuid', $uuid)->firstOrFail();
-        
+
         foreach ($product->images as $image) {
             if ($image->image) {
                 Storage::disk('public')->delete($image->image);
             }
         }
-        
+
         $product->delete();
 
         return ResponseFormatter::success([
@@ -149,7 +148,7 @@ class ProductController extends Controller
             'price_sale' => 'nullable|numeric|min:500',
             'stock' => 'required|numeric|min:0',
             'category_slug' => 'required|exists:categories,slug',
-            'description' => 'required|min:20|max:500',
+            'description' => 'required|min:20|max:1000',
             'weight' => 'required|numeric|min:1',
             'length' => 'required|numeric|min:1',
             'width' => 'required|numeric|min:1',
@@ -158,9 +157,9 @@ class ProductController extends Controller
             'images' => 'required|array|min:1|max:9',
             'images.*' => 'required|image|max:1024',
             'variations' => 'array',
-            'variations.*.name' => 'required|string|min:3|max:255',
+            'variations.*.name' => 'required|string|min:2|max:255',
             'variations.*.values' => 'array',
-            'variations.*.values.*' => 'string|min:3|max:200',
+            'variations.*.values.*' => 'string|min:2|max:200',
         ];
     }
 
