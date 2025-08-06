@@ -173,7 +173,7 @@ class ProductController extends Controller
         $payload['slug'] = Str::slug($payload['name']) . '-' . Str::random(5);
 
         // Upload video
-        if (!is_null($payload['video'])) {
+        if (!empty($payload['video'])) {
             $payload['video'] = $payload['video']->store('products/video', 'public');
         }
         // Upload image
