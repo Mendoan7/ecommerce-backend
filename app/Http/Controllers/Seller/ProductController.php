@@ -166,7 +166,7 @@ class ProductController extends Controller
         ];
     }
 
-    private function prepareData(array $payload)
+    private function prepareData(array $payload, $product = null)
     {
         // Category
         $payload['category_id'] = Category::where('slug', $payload['category_slug'])->firstOrFail()->id;
@@ -179,6 +179,13 @@ class ProductController extends Controller
         if (!empty($payload['video'])) {
             $payload['video'] = $payload['video']->store('products/video', 'public');
         }
+
+        // Remove video if requested
+        if (($payload['remove_video'] ?? false) && $product && $product->video) {
+            Storage::disk('public')->delete($product->video);
+            $payload['video'] = null;
+        }
+        
         // Upload image
         $images = [];
         if (isset($payload['images'])) {
