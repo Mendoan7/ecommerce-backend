@@ -159,6 +159,7 @@ class ProductController extends Controller
             'video' => 'nullable|file|mimes:mp4,mov,avi,wmv,flv|max:30720',
             'images' => 'required|array|min:1|max:9',
             'images.*' => 'required|image|max:1024',
+            'remove_video' => 'nullable|boolean',
             'variations' => 'array',
             'variations.*.name' => 'required|string|min:2|max:255',
             'variations.*.values' => 'array',
