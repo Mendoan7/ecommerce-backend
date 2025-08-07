@@ -86,14 +86,19 @@ class ProductController extends Controller
         $rules['old_images'] = 'array';
         $rules['old_images.*'] = 'url';
 
+        // Ubah rules 'images' agar tidak wajib saat update
+        $rules['images'] = 'nullable|array|max:9';
+        $rules['images.*'] = 'image|max:1024';
+
         $validator = Validator::make($request->all(), $rules);
         if ($validator->fails()) {
             return ResponseFormatter::error(400, $validator->errors());
         }
 
-        $payload = $this->prepareData($validator->validated());
-        $product = DB::transaction(function () use ($payload, $uuid) {
-            $product = auth()->user()->products()->where('uuid', $uuid)->firstOrFail();
+        $product = auth()->user()->products()->where('uuid', $uuid)->firstOrFail();
+        $payload = $this->prepareData($validator->validated(), $product);
+
+        DB::transaction(function () use ($product, $payload) {
             $product->update($payload);
 
             $product->variations()->delete();
@@ -111,8 +116,6 @@ class ProductController extends Controller
             foreach ($payload['images'] as $image) {
                 $product->images()->create($image);
             }
-
-            return $product;
         });
 
         $product->refresh();
@@ -178,10 +181,12 @@ class ProductController extends Controller
         }
         // Upload image
         $images = [];
-        foreach ($payload['images'] as $image) {
-            $images[] = [
-                'image' => $image->store('products/images', 'public')
-            ];
+        if (isset($payload['images'])) {
+            foreach ($payload['images'] as $image) {
+                $images[] = [
+                    'image' => $image->store('products/images', 'public')
+                ];
+            }
         }
 
         $payload['images'] = $images;
