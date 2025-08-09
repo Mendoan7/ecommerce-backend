@@ -43,7 +43,7 @@ class CartItem extends Model
         $this->attributes['variations'] = json_encode($value);
     }
 
-    public function getTotalAttribute($value)
+    public function getTotalAttribute()
     {
         return ($this->product->price_sale ?? $this->product->price) * $this->qty;
     }
