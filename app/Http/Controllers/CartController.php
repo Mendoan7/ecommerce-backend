@@ -35,18 +35,17 @@ class CartController extends Controller
             ]);
 
             $cart->refresh();
-
         }
 
         // Calculate voucher
         if ($cart->voucher != null) {
             $voucher = $cart->voucher;
-            if ($voucher->voucher_type == 'discount'){
+            if ($voucher->voucher_type == 'discount') {
                 $cart->voucher_value = $voucher->discount_cashback_type == 'percentage' ? $cart->items->sum('total') * $voucher->discount_cashback_value / 100 : $voucher->discount_cashback_value;
                 if (!is_null($voucher->discount_cashback_max) && $cart->voucher_value > $voucher->discount_cashback_max) {
                     $cart->voucher_value = $voucher->discount_cashback_max;
                 }
-            } elseif ($voucher->voucher_type == 'cashback'){
+            } elseif ($voucher->voucher_type == 'cashback') {
                 $cart->voucher_cashback = $voucher->discount_cashback_type == 'percentage' ? $cart->items->sum('total') * $voucher->discount_cashback_value / 100 : $voucher->discount_cashback_value;
                 if (!is_null($voucher->discount_cashback_max) && $cart->voucher_cashback > $voucher->discount_cashback_max) {
                     $cart->voucher_cashback = $voucher->discount_cashback_max;
@@ -86,7 +85,7 @@ class CartController extends Controller
             'variations.*.label' => 'required|exists:variations,name',
             'variations.*.value' => 'required',
         ]);
-        
+
         // Jika terjadi error
         if ($validator->fails()) {
             return ResponseFormatter::error(400, $validator->errors());
@@ -109,7 +108,7 @@ class CartController extends Controller
         $cart->items()->create([
             'product_id' => $product->id,
             'variations' => request()->variations,
-            'qty'=> request()->qty,
+            'qty' => request()->qty,
             'note' => request()->note,
         ]);
 
@@ -148,13 +147,13 @@ class CartController extends Controller
                 'Stok tidak cukup!'
             ]);
         }
-        
+
         $cartItem->update([
             'variations' => request()->variations,
             'qty' => request()->qty,
             'note' => request()->note,
         ]);
-        
+
         return $this->getCart();
     }
 
@@ -170,7 +169,7 @@ class CartController extends Controller
         $validator = Validator::make(request()->all(), [
             'voucher_code' => 'required|exists:vouchers,code',
         ]);
-        
+
         // Jika terjadi error
         if ($validator->fails()) {
             return ResponseFormatter::error(400, $validator->errors());
@@ -219,7 +218,7 @@ class CartController extends Controller
         if ($validator->fails()) {
             return ResponseFormatter::error(400, $validator->errors());
         }
-        
+
         $cart = $this->getOrCreateCart();
         $cart->address_id = auth()->user()->addresses()->where('uuid', request()->uuid)->firstOrFail()->id;
         $cart->save();
@@ -264,20 +263,20 @@ class CartController extends Controller
             ]);
         }
 
-        $weight = $cart->items->sum(function($item){
+        $weight = $cart->items->sum(function ($item) {
             return $item->qty * $item->product->weight;
         });
 
         $result = $this->getShippingOptions(
-            $sellerAddress->city->external_id,
-            $cart->address->city->external_id,
+            $sellerAddress->rajaongkir_subdistrict_id,
+            $cart->address->rajaongkir_subdistrict_id,
             $weight,
             request()->courier
         );
 
         return ResponseFormatter::success($result);
     }
-    
+
     public function updateShippingFee()
     {
         $validator = Validator::make(request()->all(), [
@@ -314,13 +313,13 @@ class CartController extends Controller
             ]);
         }
 
-        $weight = $cart->items->sum(function($item){
+        $weight = $cart->items->sum(function ($item) {
             return $item->qty * $item->product->weight;
         });
 
         $result = $this->getShippingOptions(
-            $sellerAddress->city->external_id,
-            $cart->address->city->external_id,
+            $sellerAddress->rajaongkir_subdistrict_id,
+            $cart->address->rajaongkir_subdistrict_id,
             $weight,
             request()->courier
         );
@@ -345,26 +344,22 @@ class CartController extends Controller
     {
         $response = \Http::withHeaders([
             'key' => config('services.rajaongkir.key')
-        ])->post(config('services.rajaongkir.base_url') . '/cost', [
+        ])->asForm()->post(config('services.rajaongkir.base_url') . '/calculate/domestic-cost', [
             'origin' => $origin,
             'destination' => $destination,
             'weight' => $weight,
             'courier' => $courier
         ]);
 
-        $result = collect($response->object()->rajaongkir->results)->map(function($item){
-            return [
-                'service' => $item->name,
-                'cost' =>collect($item->costs)->map(function($cost){
-                    return [
-                        'service' => $cost->service,
-                        'description' => $cost->description,
-                        'etd' => $cost->cost[0]->etd,
-                        'value' => $cost->cost[0]->value,
-                    ];
-                }),
+        $result['service'] = $response->object()->data[0]->name;
+        foreach ($response->object()->data as $item) {
+            $result['cost'][] = [
+                'service' => $item->service,
+                'description' => $item->description,
+                'etd' => $item->etd,
+                'value' => $item->cost,
             ];
-        })[0];
+        }
 
         return $result;
     }
@@ -392,7 +387,7 @@ class CartController extends Controller
             ]);
         }
 
-        $order = DB::transaction(function() use($cart) {
+        $order = DB::transaction(function () use ($cart) {
             // Create order
             $order = auth()->user()->orders()->create([
                 'seller_id' => $cart->items->first()->product->seller_id,
@@ -454,7 +449,7 @@ class CartController extends Controller
         $cart = $this->getOrCreateCart();
 
         $coin = 0;
-        if (request()->use == 1){
+        if (request()->use == 1) {
             $balance = auth()->user()->balance;
             $maxCoin = $cart->items->sum('total') * 0.1;
             $coin = $balance > $maxCoin ? $maxCoin : $balance;
@@ -465,5 +460,4 @@ class CartController extends Controller
 
         return $this->getCart();
     }
-
 }

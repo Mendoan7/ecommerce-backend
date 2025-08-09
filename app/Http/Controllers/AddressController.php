@@ -7,6 +7,7 @@ use App\Models\Address\Province;
 use Illuminate\Http\Request;
 use App\ResponseFormatter;
 use App\Services\RajaOngkirClient;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Validator as ValidationValidator;
 
@@ -33,7 +34,20 @@ class AddressController extends Controller
             return ResponseFormatter::error(400, $validator->errors());
         }
 
-        $address = auth()->user()->addresses()->create($this->prepareData());
+        $response = Http::withHeader([
+            'key' => config('services.rajaongkir.key')
+        ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
+            'search' => request()->postal_code,
+        ]);
+
+        if ($response->object()->meta->code == '404' || !isset($response->object()->data[0])) {
+            return ResponseFormatter::error(404, 'Kodepos tidak ditemukan');
+        }
+
+        $payload = $this->prepareData();
+        $payload['rajaongkir_subdistrict_id'] = $response->object()->data[0]->id;
+
+        $address = auth()->user()->addresses()->create($payload);
         $address->refresh();
 
         return $this->show($address->uuid);
@@ -61,7 +75,21 @@ class AddressController extends Controller
         }
 
         $address = auth()->user()->addresses()->where('uuid', $uuid)->firstOrFail();
-        $address->update($this->prepareData());
+
+        $response = Http::withHeader([
+            'key' => config('services.rajaongkir.key')
+        ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
+            'search' => request()->postal_code,
+        ]);
+
+        if ($response->object()->meta->code == '404' || !isset($response->object()->data[0])) {
+            return ResponseFormatter::error(404, 'Kodepos tidak ditemukan');
+        }
+
+        $payload = $this->prepareData();
+        $payload['rajaongkir_subdistrict_id'] = $response->object()->data[0]->id;
+
+        $address->update($payload);
         $address->refresh();
 
         return $this->show($address->uuid);
@@ -134,81 +162,31 @@ class AddressController extends Controller
         return $payload;
     }
 
-    public function getProvince(RajaOngkirClient $rajaOngkirClient)
+    public function getProvince()
     {
-        $forceRefresh = request()->boolean('refresh');
-        $cacheKey = 'rajaongkir_provinces_synced';
+        $provinces = cache()->remember('provinces', 3600, function(){
+            return \App\Models\Address\Province::get(['uuid', 'name']);
+        });
 
-        if ($forceRefresh || !cache()->has($cacheKey) || !Province::exists()) {
-            $apiProvinces = $rajaOngkirClient->provinces(); // <= pakai method kamu
-            foreach ($apiProvinces as $row) {
-                Province::updateOrCreate(
-                    ['external_id' => (int) $row['province_id']],
-                    ['name' => $row['province']]
-                );
-            }
-            cache()->put($cacheKey, true, 3600);
-        }
-
-        $provinces = Province::get(['uuid', 'name', 'external_id']);
-        return ResponseFormatter::success(
-            $provinces->map(fn($p) => [
-                'uuid' => $p->uuid,
-                'name' => $p->name,
-                'external_id' => $p->external_id
-            ])
-        );
+        return ResponseFormatter::success($provinces);
     }
 
-    public function getCity(RajaOngkirClient $rajaOngkirClient)
+    public function getCity()
     {
-        $provinceUuid       = request('province_uuid');
-        $provinceExternalId = request()->integer('province_external_id');
-        $search             = request('search');
-        $forceRefresh       = request()->boolean('refresh');
-
-        if (!$provinceExternalId && $provinceUuid) {
-            $provinceExternalId = Province::where('uuid', $provinceUuid)->value('external_id');
+        $query = \App\Models\Address\City::query();
+        if (request()->province_uuid) {
+            $query = $query->whereIn('province_id', function($subQuery){
+                $subQuery->from('provinces')->where('uuid', request()->province_uuid)->select('id');
+            });
         }
 
-        $cacheKey = 'rajaongkir_cities_synced_' . ($provinceExternalId ?? 'all');
-
-        if ($forceRefresh || !cache()->has($cacheKey)) {
-            if (!Province::exists()) {
-                foreach ($rajaOngkirClient->provinces() as $p) {
-                    Province::updateOrCreate(
-                        ['external_id' => (int) $p['province_id']],
-                        ['name' => $p['province']]
-                    );
-                }
-            }
-
-            $apiCities = $rajaOngkirClient->cities($provinceExternalId); // <= pakai method kamu
-            $provMap   = Province::pluck('id', 'external_id');
-
-            foreach ($apiCities as $c) {
-                $provId = $provMap[(int) $c['province_id']] ?? null;
-                if (!$provId) continue;
-
-                City::updateOrCreate(
-                    ['external_id' => (int) $c['city_id']],
-                    ['province_id' => $provId, 'name' => $c['city_name']]
-                );
-            }
-
-            cache()->put($cacheKey, true, 3600);
+        if (request()->search) {
+            $query = $query->where('name', 'LIKE', '%' . request()->search . '%');
         }
 
-        $cities = City::query()
-            ->when(
-                $provinceExternalId,
-                fn($q) =>
-                $q->whereIn('province_id', function ($sq) use ($provinceExternalId) {
-                    $sq->from('provinces')->where('external_id', $provinceExternalId)->select('id');
-                })
-            )
-            ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
-            ->get();
+        $cities = cache()->remember('cities_' . request()->province_uuid . '_' . request()->search, 3600, function() use($query) {
+            return $query->get();
+        });
 
         return ResponseFormatter::success($cities->pluck('api_response'));
     }
