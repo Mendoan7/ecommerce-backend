@@ -20,8 +20,13 @@ class CartItem extends Model
     ];
 
     protected $casts = [
-        'variations' =>'array',
+        'variations' => 'array',
     ];
+
+    public function cart()
+    {
+        return $this->belongsTo(Cart::class);
+    }
 
     public function product()
     {
@@ -42,7 +47,7 @@ class CartItem extends Model
     {
         return ($this->product->price_sale ?? $this->product->price) * $this->qty;
     }
-    
+
     public function getApiResponseAttribute()
     {
         return [
