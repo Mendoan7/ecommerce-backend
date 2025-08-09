@@ -6,6 +6,7 @@ use App\Models\Address\City;
 use App\Models\Address\Province;
 use Illuminate\Http\Request;
 use App\ResponseFormatter;
+use App\Services\RajaOngkirClient;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Validator as ValidationValidator;
 
@@ -54,7 +55,7 @@ class AddressController extends Controller
     public function update(Request $request, string $uuid)
     {
         $validator = Validator::make(request()->all(), $this->getValidation());
-        
+
         if ($validator->fails()) {
             return ResponseFormatter::error(400, $validator->errors());
         }
@@ -127,37 +128,87 @@ class AddressController extends Controller
         if ($payload['is_default'] == 1) {
             auth()->user()->addresses()->update([
                 'is_default' => false
-            ]);    
+            ]);
         }
 
         return $payload;
     }
 
-    public function getProvince()
+    public function getProvince(RajaOngkirClient $rajaOngkirClient)
     {
-        $provinces = cache()->remember('provinces', 3600, function(){
-            return Province::get(['uuid', 'name']);
-        });
+        $forceRefresh = request()->boolean('refresh');
+        $cacheKey = 'rajaongkir_provinces_synced';
 
-        return ResponseFormatter::success($provinces);
+        if ($forceRefresh || !cache()->has($cacheKey) || !Province::exists()) {
+            $apiProvinces = $rajaOngkirClient->provinces(); // <= pakai method kamu
+            foreach ($apiProvinces as $row) {
+                Province::updateOrCreate(
+                    ['external_id' => (int) $row['province_id']],
+                    ['name' => $row['province']]
+                );
+            }
+            cache()->put($cacheKey, true, 3600);
+        }
+
+        $provinces = Province::get(['uuid', 'name', 'external_id']);
+        return ResponseFormatter::success(
+            $provinces->map(fn($p) => [
+                'uuid' => $p->uuid,
+                'name' => $p->name,
+                'external_id' => $p->external_id
+            ])
+        );
     }
 
-    public function getCity()
+    public function getCity(RajaOngkirClient $rajaOngkirClient)
     {
-        $query = City::query();
-        if (request()->province_uuid){
-            $query = $query->whereIn('province_id', function($subQuery){
-                $subQuery->from('provinces')->where('uuid', request()->province_uuid)->select('id');
-            });
+        $provinceUuid       = request('province_uuid');
+        $provinceExternalId = request()->integer('province_external_id');
+        $search             = request('search');
+        $forceRefresh       = request()->boolean('refresh');
+
+        if (!$provinceExternalId && $provinceUuid) {
+            $provinceExternalId = Province::where('uuid', $provinceUuid)->value('external_id');
         }
 
-        if (request()->search){
-            $query = $query->where('name', 'LIKE', '%' . request()->search . '%');
+        $cacheKey = 'rajaongkir_cities_synced_' . ($provinceExternalId ?? 'all');
+
+        if ($forceRefresh || !cache()->has($cacheKey)) {
+            if (!Province::exists()) {
+                foreach ($rajaOngkirClient->provinces() as $p) {
+                    Province::updateOrCreate(
+                        ['external_id' => (int) $p['province_id']],
+                        ['name' => $p['province']]
+                    );
+                }
+            }
+
+            $apiCities = $rajaOngkirClient->cities($provinceExternalId); // <= pakai method kamu
+            $provMap   = Province::pluck('id', 'external_id');
+
+            foreach ($apiCities as $c) {
+                $provId = $provMap[(int) $c['province_id']] ?? null;
+                if (!$provId) continue;
+
+                City::updateOrCreate(
+                    ['external_id' => (int) $c['city_id']],
+                    ['province_id' => $provId, 'name' => $c['city_name']]
+                );
+            }
+
+            cache()->put($cacheKey, true, 3600);
         }
 
-        $cities = cache()->remember('cities_' . request()->province_uuid . '_' . request()->search, 3600, function() use($query) {
-            return $query->get();
-        });
+        $cities = City::query()
+            ->when(
+                $provinceExternalId,
+                fn($q) =>
+                $q->whereIn('province_id', function ($sq) use ($provinceExternalId) {
+                    $sq->from('provinces')->where('external_id', $provinceExternalId)->select('id');
+                })
+            )
+            ->when($search, fn($q) => $q->where('name', 'like', "%{$search}%"))
+            ->get();
 
         return ResponseFormatter::success($cities->pluck('api_response'));
     }
