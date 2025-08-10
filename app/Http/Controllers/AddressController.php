@@ -34,7 +34,7 @@ class AddressController extends Controller
             return ResponseFormatter::error(400, $validator->errors());
         }
 
-        $response = Http::withHeaders([
+        $response = \Http::withHeaders([
             'key' => config('services.rajaongkir.key')
         ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
             'search' => request()->postal_code,
@@ -76,7 +76,7 @@ class AddressController extends Controller
 
         $address = auth()->user()->addresses()->where('uuid', $uuid)->firstOrFail();
 
-        $response = Http::withHeaders([
+        $response = \Http::withHeaders([
             'key' => config('services.rajaongkir.key')
         ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
             'search' => request()->postal_code,
