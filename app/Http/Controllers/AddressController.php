@@ -34,14 +34,14 @@ class AddressController extends Controller
             return ResponseFormatter::error(400, $validator->errors());
         }
 
-        $response = Http::withHeader([
+        $response = Http::withHeaders([
             'key' => config('services.rajaongkir.key')
         ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
             'search' => request()->postal_code,
         ]);
 
         if ($response->object()->meta->code == '404' || !isset($response->object()->data[0])) {
-            return ResponseFormatter::error(404, 'Kodepos tidak ditemukan');
+            return ResponseFormatter::error(404, ['Kodepos tidak ditemukan']);
         }
 
         $payload = $this->prepareData();
@@ -76,14 +76,14 @@ class AddressController extends Controller
 
         $address = auth()->user()->addresses()->where('uuid', $uuid)->firstOrFail();
 
-        $response = Http::withHeader([
+        $response = Http::withHeaders([
             'key' => config('services.rajaongkir.key')
         ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
             'search' => request()->postal_code,
         ]);
 
         if ($response->object()->meta->code == '404' || !isset($response->object()->data[0])) {
-            return ResponseFormatter::error(404, 'Kodepos tidak ditemukan');
+            return ResponseFormatter::error(404, ['Kodepos tidak ditemukan']);
         }
 
         $payload = $this->prepareData();
@@ -164,7 +164,7 @@ class AddressController extends Controller
 
     public function getProvince()
     {
-        $provinces = cache()->remember('provinces', 3600, function(){
+        $provinces = cache()->remember('provinces', 3600, function () {
             return \App\Models\Address\Province::get(['uuid', 'name']);
         });
 
@@ -175,7 +175,7 @@ class AddressController extends Controller
     {
         $query = \App\Models\Address\City::query();
         if (request()->province_uuid) {
-            $query = $query->whereIn('province_id', function($subQuery){
+            $query = $query->whereIn('province_id', function ($subQuery) {
                 $subQuery->from('provinces')->where('uuid', request()->province_uuid)->select('id');
             });
         }
@@ -184,7 +184,7 @@ class AddressController extends Controller
             $query = $query->where('name', 'LIKE', '%' . request()->search . '%');
         }
 
-        $cities = cache()->remember('cities_' . request()->province_uuid . '_' . request()->search, 3600, function() use($query) {
+        $cities = cache()->remember('cities_' . request()->province_uuid . '_' . request()->search, 3600, function () use ($query) {
             return $query->get();
         });
 
