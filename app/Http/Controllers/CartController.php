@@ -8,8 +8,8 @@ use App\Models\Product\Product;
 use App\Models\Voucher;
 use App\ResponseFormatter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Validator as ValidationValidator;
 
 class CartController extends Controller
 {
@@ -206,6 +206,8 @@ class CartController extends Controller
         $cart->voucher_id =  null;
         $cart->voucher_value =  null;
         $cart->voucher_cashback =  null;
+        $cart->save();
+
         return $this->getCart();
     }
 
@@ -342,7 +344,7 @@ class CartController extends Controller
 
     private function getShippingOptions(int $origin, int $destination, float $weight, string $courier)
     {
-        $response = \Http::withHeaders([
+        $response = Http::withHeaders([
             'key' => config('services.rajaongkir.key')
         ])->asForm()->post(config('services.rajaongkir.base_url') . '/calculate/domestic-cost', [
             'origin' => $origin,

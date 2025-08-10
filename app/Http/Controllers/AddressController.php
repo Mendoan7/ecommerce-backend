@@ -4,15 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Models\Address\City;
 use App\Models\Address\Province;
-use Illuminate\Http\Request;
 use App\ResponseFormatter;
-use App\Services\RajaOngkirClient;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Validator as ValidationValidator;
 
 class AddressController extends Controller
 {
+    public function getProvince()
+    {
+        $provinces = cache()->remember('provinces', 3600, function () {
+            return Province::get(['uuid', 'name']);
+        });
+
+        return ResponseFormatter::success($provinces);
+    }
+
+    public function getCity()
+    {
+        $query = City::query();
+        if (request()->province_uuid) {
+            $query = $query->whereIn('province_id', function ($subQuery) {
+                $subQuery->from('provinces')->where('uuid', request()->province_uuid)->select('id');
+            });
+        }
+
+        if (request()->search) {
+            $query = $query->where('name', 'LIKE', '%' . request()->search . '%');
+        }
+
+        $cities = cache()->remember('cities_' . request()->province_uuid . '_' . request()->search, 3600, function () use ($query) {
+            return $query->get();
+        });
+
+        return ResponseFormatter::success($cities->pluck('api_response'));
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -26,7 +53,7 @@ class AddressController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store()
     {
         $validator = Validator::make(request()->all(), $this->getValidation());
 
@@ -34,7 +61,7 @@ class AddressController extends Controller
             return ResponseFormatter::error(400, $validator->errors());
         }
 
-        $response = \Http::withHeaders([
+        $response = Http::withHeaders([
             'key' => config('services.rajaongkir.key')
         ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
             'search' => request()->postal_code,
@@ -76,7 +103,7 @@ class AddressController extends Controller
 
         $address = auth()->user()->addresses()->where('uuid', $uuid)->firstOrFail();
 
-        $response = \Http::withHeaders([
+        $response = Http::withHeaders([
             'key' => config('services.rajaongkir.key')
         ])->get(config('services.rajaongkir.base_url') . '/destination/domestic-destination', [
             'search' => request()->postal_code,
@@ -160,34 +187,5 @@ class AddressController extends Controller
         }
 
         return $payload;
-    }
-
-    public function getProvince()
-    {
-        $provinces = cache()->remember('provinces', 3600, function () {
-            return \App\Models\Address\Province::get(['uuid', 'name']);
-        });
-
-        return ResponseFormatter::success($provinces);
-    }
-
-    public function getCity()
-    {
-        $query = \App\Models\Address\City::query();
-        if (request()->province_uuid) {
-            $query = $query->whereIn('province_id', function ($subQuery) {
-                $subQuery->from('provinces')->where('uuid', request()->province_uuid)->select('id');
-            });
-        }
-
-        if (request()->search) {
-            $query = $query->where('name', 'LIKE', '%' . request()->search . '%');
-        }
-
-        $cities = cache()->remember('cities_' . request()->province_uuid . '_' . request()->search, 3600, function () use ($query) {
-            return $query->get();
-        });
-
-        return ResponseFormatter::success($cities->pluck('api_response'));
     }
 }
