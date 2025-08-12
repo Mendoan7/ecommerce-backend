@@ -40,14 +40,29 @@ class CartController extends Controller
         // Calculate voucher
         if ($cart->voucher != null) {
             $voucher = $cart->voucher;
+            // DISKON
             if ($voucher->voucher_type == 'discount') {
-                $cart->voucher_value = $voucher->discount_cashback_type == 'percentage' ? $cart->items->sum('total') * $voucher->discount_cashback_value / 100 : $voucher->discount_cashback_value;
-                if (!is_null($voucher->discount_cashback_max) && $cart->voucher_value > $voucher->discount_cashback_max) {
+                $cart->voucher_value = $voucher->discount_cashback_type === 'percentage'
+                    ? ($cart->items->sum('total') * $voucher->discount_cashback_value / 100)
+                    : $voucher->discount_cashback_value;
+
+                if (
+                    !is_null($voucher->discount_cashback_max)
+                    && $voucher->discount_cashback_max > 0
+                    && $cart->voucher_value > $voucher->discount_cashback_max
+                ) {
                     $cart->voucher_value = $voucher->discount_cashback_max;
                 }
             } elseif ($voucher->voucher_type == 'cashback') {
-                $cart->voucher_cashback = $voucher->discount_cashback_type == 'percentage' ? $cart->items->sum('total') * $voucher->discount_cashback_value / 100 : $voucher->discount_cashback_value;
-                if (!is_null($voucher->discount_cashback_max) && $cart->voucher_cashback > $voucher->discount_cashback_max) {
+                $cart->voucher_cashback = $voucher->discount_cashback_type === 'percentage'
+                    ? ($cart->items->sum('total') * $voucher->discount_cashback_value / 100)
+                    : $voucher->discount_cashback_value;
+
+                if (
+                    !is_null($voucher->discount_cashback_max)
+                    && $voucher->discount_cashback_max > 0
+                    && $cart->voucher_cashback > $voucher->discount_cashback_max
+                ) {
                     $cart->voucher_cashback = $voucher->discount_cashback_max;
                 }
             }
