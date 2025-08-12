@@ -45,7 +45,6 @@ class CartController extends Controller
                 $cart->voucher_value = $voucher->discount_cashback_type === 'percentage'
                     ? ($cart->items->sum('total') * $voucher->discount_cashback_value / 100)
                     : $voucher->discount_cashback_value;
-
                 if (
                     !is_null($voucher->discount_cashback_max)
                     && $voucher->discount_cashback_max > 0
@@ -53,7 +52,9 @@ class CartController extends Controller
                 ) {
                     $cart->voucher_value = $voucher->discount_cashback_max;
                 }
-            } elseif ($voucher->voucher_type == 'cashback') {
+            }
+            // CASHBACK 
+            elseif ($voucher->voucher_type == 'cashback') {
                 $cart->voucher_cashback = $voucher->discount_cashback_type === 'percentage'
                     ? ($cart->items->sum('total') * $voucher->discount_cashback_value / 100)
                     : $voucher->discount_cashback_value;
