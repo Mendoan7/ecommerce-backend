@@ -176,7 +176,7 @@ class CartController extends Controller
         }
 
         $voucher = Voucher::where('code', request()->voucher_code)->firstOrFail();
-        if ($voucher->start_date > now() && $voucher->end_date < now()) {
+        if ($voucher->start_date > now() || $voucher->end_date < now()) {
             return ResponseFormatter::error(400, null, [
                 'Voucher tidak dapat digunakan!'
             ]);
